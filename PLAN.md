@@ -449,10 +449,22 @@ chat_memory_vectors (id, user_id, content, embedding vector(1536),
 
 ---
 
-## 14. Open Questions (Remaining)
+## 14. Decisions Finalized
 
-1. **Which banks** do you and your wife use? (for Axio CSV format testing)
-2. **Do you have an existing spreadsheet** with current holdings we can import as seed data?
-3. **Claude API budget** — are you comfortable with ~₹1000-2000/month for AI features?
-4. **Custom domain** — do you want something like `finance.yourdomain.com`?
-5. **Who should have access?** Just you, or wife too from day 1?
+| Question | Answer |
+|----------|--------|
+| Banks used | **Kotak, HSBC, ICICI, SBI** — Axio CSV parsing tested against these |
+| Existing data | **No** — fresh start, all data entered manually |
+| AI API | **Anthropic API** (separate from Claude Pro subscription, pay-per-use ~$5-15/mo) |
+| Custom domain | **No** — use default Vercel/Render URLs for now |
+| Access model | **Multi-user from day 1** — separate logins for you & wife + **family dashboard view** |
+
+### Multi-User & Family View Design
+- Each user has their own login, their own holdings, income, expenses
+- **Family view** (togglable): combines both users' data into a household view
+  - Household net worth (combined)
+  - Household income vs expenses
+  - Combined asset allocation
+  - AI analysis considers both portfolios together
+- Individual view: see only your own data
+- Shared data: property (co-owned), joint accounts, household expenses can be tagged as "shared"
