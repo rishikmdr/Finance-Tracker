@@ -1,274 +1,458 @@
-# Finance Tracker — Project Plan
+# Finance Tracker — Project Plan (v2)
 
 ## 1. What Are We Building?
 
-A personal finance dashboard for a dual-income household that:
-- Tracks **income & expenses** (yours + wife's)
-- Tracks **all investments** — shares, mutual funds, PF, NPS, property, gold
-- Shows **live market prices** for stocks and MF NAVs
-- Pulls expense data from **Axio** (or a workaround, since Axio has no API)
-- Gives a **consolidated net worth** view at any point in time
+A **cloud-hosted, AI-powered personal finance platform** for a dual-income household that:
+
+- Tracks **income & expenses** (yours + wife's) with monthly Axio CSV imports
+- Tracks **all investments** — shares (with investment type), mutual funds (with SIP tracking), PF, NPS, property, gold, FDs
+- Shows **live prices** for all market-linked assets (stocks, MF NAV, gold)
+- Has an **AI-powered central console** that analyzes your portfolio — what's good, what's bad, risk assessment
+- Provides **AI-driven next steps & suggestions** — where to invest, rebalancing advice
+- Includes an **AI chatbot** with **long-term memory** that understands your financial goals, risk appetite, life stage, and plans — and remembers everything across all future conversations
 
 ---
 
 ## 2. Scope — What Gets Tracked
 
-| Category | Details | Data Source |
-|----------|---------|-------------|
-| **Income** | Salary (you + wife), rental, dividends, interest | Manual entry / bank statement import |
-| **Expenses** | Daily spends, bills, EMIs, subscriptions | Axio workaround (see below), manual |
-| **Shares** | NSE/BSE holdings | Manual holdings + yfinance for live prices |
-| **Mutual Funds** | SIPs, lumpsum, all schemes | Manual holdings + MFapi.in for NAV |
-| **Provident Fund** | EPF + VPF balances | Manual entry (EPFO has no API) |
-| **NPS** | Tier 1 & 2 contributions | Manual entry + Arthgyaan API for NAV |
-| **Property** | Purchase price, current estimated value | Manual entry |
-| **Fixed Deposits** | Bank FDs, corporate FDs | Manual entry |
-| **Gold** | Physical, digital, SGBs | Manual entry + yfinance for gold price |
-| **Other** | PPF, SSY, bonds, crypto, etc. | Manual entry |
+| Category | Details | Data Source | Live Price? |
+|----------|---------|-------------|-------------|
+| **Income** | Salary (you + wife), rental, dividends, interest | Manual entry | No |
+| **Expenses** | Daily spends, bills, EMIs, subscriptions | Axio CSV import (monthly) | No |
+| **Shares** | NSE/BSE holdings + investment type (long-term / swing / positional) | Manual entry | Yes — yfinance |
+| **Mutual Funds** | SIP + lumpsum, scheme details, folio | Manual entry + SIP scheduler | Yes — MFapi.in |
+| **Provident Fund** | EPF + VPF balances | Manual entry | No |
+| **NPS** | Tier 1 & 2 contributions | Manual entry | Yes — Arthgyaan API |
+| **Property** | Purchase price, estimated current value | Manual entry | No |
+| **Fixed Deposits** | Bank FDs, corporate FDs | Manual entry | No |
+| **Gold** | Physical, digital, SGBs | Manual entry | Yes — yfinance |
+| **PPF / SSY / Bonds** | Balances, interest rates | Manual entry | No |
+| **Liabilities** | Home loan, car loan, personal loan EMIs | Manual entry | No |
 
 ---
 
-## 3. The Axio Problem & Solution
+## 3. Axio Integration — CSV Import
 
-**Problem:** Axio (formerly Walnut) has **no public API, no data export, and no third-party integrations**. It reads SMS to auto-categorize expenses.
+**Confirmed:** Axio supports CSV export of expenses.
 
-**Workaround options (pick one or combine):**
+**Flow:**
+1. User exports monthly CSV from Axio app
+2. Uploads CSV to our web app
+3. Backend parses and auto-categorizes transactions
+4. User reviews, edits categories if needed, confirms import
+5. Data merges into expense tracker (deduplication on date + amount + description)
 
-| Option | How | Effort |
-|--------|-----|--------|
-| **A. SMS parsing (recommended)** | Build our own SMS parser that reads the same bank/UPI SMS that Axio reads. Run it on a simple Android companion app or use Tasker/MacroDroid to forward SMS to our backend. | Medium |
-| **B. Manual CSV import** | User exports bank statements (most banks offer CSV/XLS download) and imports into our tracker monthly. | Low |
-| **C. Manual entry** | Simple form to log expenses. Defeats the purpose if Axio already does this. | Low |
-| **D. Screenshot/OCR** | Take screenshots of Axio's reports, OCR them into structured data. Hacky but works. | Medium |
-| **E. Bank statement email parsing** | Many banks email monthly statements. Auto-parse these via an email integration. | Medium |
-
-**Recommendation:** Start with **Option B (CSV import)** for quick wins, then build **Option A (SMS parsing)** or **Option E (email parsing)** as a Phase 2 enhancement.
+**Parser features:**
+- Auto-detect Axio CSV format
+- Map Axio categories to our category system
+- Flag duplicates from previous imports
+- Support bulk edit before confirming import
 
 ---
 
-## 4. Tech Stack (Proposed)
+## 4. Investment Data Entry — Types & SIP
+
+### Shares — Investment Type Classification
+When adding a stock holding, user selects:
+
+| Type | Description |
+|------|-------------|
+| **Long-term** | Buy & hold (>1 year), wealth building |
+| **Swing Trade** | Medium-term (weeks to months) |
+| **Positional** | Short-term (days to weeks) |
+| **Intraday** | Day trades (P&L tracking only, no holdings) |
+| **IPO** | IPO allotments |
+
+This classification enables the AI to give type-specific advice (e.g., "your long-term portfolio is equity-heavy" vs "your swing trades have a 60% win rate").
+
+### Mutual Funds — SIP Tracking
+- **SIP entry:** scheme, amount, date-of-month, start date, frequency (monthly/quarterly)
+- **SIP dashboard:** active SIPs, total monthly SIP outflow, upcoming SIP dates
+- **SIP history:** auto-log each SIP installment (units bought at that day's NAV)
+- **Lumpsum entry:** one-time investments tracked separately
+- **Step-up SIP:** annual SIP increase amount/percentage
+
+---
+
+## 5. The AI Brain — Three Layers
+
+### Layer 1: AI Central Console (Dashboard Intelligence)
+
+An always-visible AI summary panel on the dashboard that shows:
+
+- **Portfolio Health Score** (0-100) based on diversification, risk, returns
+- **What's Good:** "Your MF SIPs are well-diversified across large/mid/small cap"
+- **What's Bad:** "70% of your equity is in 3 stocks — concentration risk"
+- **Alerts:** "Your emergency fund covers only 2 months — target is 6 months"
+- **Key Metrics:** Asset allocation vs ideal, debt-to-equity ratio, savings rate
+
+This refreshes daily or on-demand. Generated by Claude API analyzing your full portfolio data.
+
+### Layer 2: AI Suggestions Engine
+
+Proactive recommendations:
+
+- **Where to invest next:** Based on current allocation gaps, market conditions, your goals
+- **Rebalancing alerts:** "Your equity allocation is 75%, target is 60% — consider moving to debt"
+- **Tax optimization:** "Harvest LTCG losses in these stocks before March 31"
+- **SIP suggestions:** "Based on your income growth, consider stepping up SIPs by 10%"
+- **Expense insights:** "Your dining-out expenses are 40% above your 6-month average"
+- **Upcoming actions:** "FD maturing in 15 days — reinvest or withdraw?"
+
+### Layer 3: AI Financial Chatbot (Long-Term Memory)
+
+A conversational chatbot embedded in the app that:
+
+- **Knows your complete financial picture** — all holdings, income, expenses, goals
+- **Remembers everything** across sessions — your risk appetite, life goals, past decisions, family plans
+- **Answers questions:** "Can I afford a 2 Cr house in 3 years?" / "Am I on track for retirement at 50?"
+- **Plans with you:** "I want to save for my kid's education — how much per month?"
+- **Learns over time:** Gets smarter about YOUR specific financial behavior and preferences
+
+**Memory architecture:**
+```
+┌─────────────────────────────────────────────────────┐
+│                 Chatbot Memory System                │
+│                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │
+│  │ User Profile │  │ Conversation│  │  Financial  │  │
+│  │   Memory     │  │   History   │  │   Context   │  │
+│  │              │  │             │  │             │  │
+│  │ - Goals      │  │ - Past Q&As │  │ - Portfolio │  │
+│  │ - Risk level │  │ - Decisions │  │   snapshot  │  │
+│  │ - Life stage │  │ - Advice    │  │ - Trends    │  │
+│  │ - Family     │  │   given     │  │ - Changes   │  │
+│  │ - Preferences│  │ - Follow-ups│  │             │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬─────┘  │
+│         └────────────────┼────────────────┘         │
+│                          ▼                          │
+│              Vector DB (pgvector / Qdrant)          │
+│         + Structured DB (user_memory table)         │
+└─────────────────────────────────────────────────────┘
+```
+
+**How memory works:**
+1. **User Profile Memory** — structured facts extracted from conversations (stored in DB):
+   - "User is 32, married, 1 child age 3"
+   - "Risk appetite: moderate-aggressive"
+   - "Goal: retire at 50, need 5 Cr corpus"
+   - "Wife earns ~18L/year, user earns ~25L/year"
+2. **Conversation History** — past conversations summarized and stored in vector DB for semantic search
+3. **Financial Context** — current portfolio data injected into every AI call as context
+
+**Tech:** Claude API (Sonnet for fast responses, Opus for deep analysis) + pgvector for semantic memory + structured memory table for key facts.
+
+---
+
+## 6. Tech Stack
 
 ### Backend
-- **Python 3.12+** with **FastAPI** — lightweight, async, great for APIs
-- **SQLite** (start simple) → migrate to **PostgreSQL** if needed later
-- **SQLAlchemy** — ORM
-- **Celery + Redis** — for scheduled jobs (price refresh, etc.)
+- **Python 3.12+** with **FastAPI** — async, fast, great for APIs
+- **PostgreSQL** — primary database (cloud-hosted, needed for pgvector)
+- **pgvector** extension — vector storage for chatbot memory
+- **SQLAlchemy + Alembic** — ORM + migrations
+- **Celery + Redis** — background jobs (price refresh, AI analysis)
+- **Claude API (Anthropic)** — AI engine for console, suggestions, chatbot
 
 ### Frontend
-- **React** (Vite + TypeScript) — modern, fast
-- **Recharts or Chart.js** — for portfolio graphs, expense charts
-- **TailwindCSS** — styling
+- **React 18** (Vite + TypeScript)
+- **TailwindCSS** — utility-first styling
+- **Recharts** — portfolio charts, expense graphs, net worth trends
+- **React Query (TanStack Query)** — data fetching + caching
+- **Shadcn/ui** — component library (built on Radix, works with Tailwind)
 
-### Data Sources / Integrations
-- **yfinance** (Python) — live stock prices, gold prices, index values
+### Data Sources
+- **yfinance** — live stock prices (NSE `.NS` / BSE `.BO`), gold, indices
 - **MFapi.in** — mutual fund NAV (free, no auth)
 - **Arthgyaan API** — NPS NAV data
-- **CSV parser** — for bank statement imports
+- **Axio CSV** — expense data import
 
-### Infrastructure (local-first)
-- Runs locally or on a home server (Raspberry Pi, NAS, etc.)
-- Optional: Deploy to a cheap VPS or Railway/Render later
-- Docker Compose for easy setup
+### Cloud Hosting
+- **Frontend:** Vercel (free tier — perfect for React SPA)
+- **Backend:** Render (Starter plan ~$7/mo) or Railway ($5/mo hobby)
+- **Database:** Render managed PostgreSQL or Neon (free tier, supports pgvector)
+- **Redis:** Render or Upstash (free tier)
+- **Total estimated cost:** ~$7-15/month
 
 ---
 
-## 5. Architecture
+## 7. Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  React Frontend                  │
-│  Dashboard │ Portfolio │ Expenses │ Net Worth    │
-└──────────────────────┬──────────────────────────┘
-                       │ REST API
-┌──────────────────────▼──────────────────────────┐
-│                 FastAPI Backend                   │
-│                                                  │
-│  ┌─────────┐ ┌──────────┐ ┌──────────────────┐  │
-│  │ Auth    │ │ Portfolio │ │ Expense Manager  │  │
-│  │ Module  │ │ Manager  │ │ (CSV import etc) │  │
-│  └─────────┘ └──────────┘ └──────────────────┘  │
-│                                                  │
-│  ┌─────────────────────────────────────────────┐ │
-│  │         Price Refresh Service (Celery)      │ │
-│  │  yfinance │ MFapi.in │ Arthgyaan │ Gold     │ │
-│  └─────────────────────────────────────────────┘ │
-└──────────────────────┬──────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                     React Frontend (Vercel)                   │
+│                                                              │
+│  ┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────────────┐ │
+│  │Dashboard │ │Portfolio │ │Expenses │ │  AI Chatbot UI   │ │
+│  │+ AI      │ │(Stocks,  │ │(Axio    │ │  (conversation   │ │
+│  │Console   │ │ MF, SIP) │ │ import) │ │   interface)     │ │
+│  └──────────┘ └──────────┘ └─────────┘ └──────────────────┘ │
+└──────────────────────┬───────────────────────────────────────┘
+                       │ REST API + WebSocket (chat)
+┌──────────────────────▼───────────────────────────────────────┐
+│                  FastAPI Backend (Render)                      │
+│                                                               │
+│  ┌──────────┐ ┌───────────┐ ┌────────────┐ ┌──────────────┐ │
+│  │ Auth &   │ │ Portfolio │ │  Expense   │ │  AI Engine   │ │
+│  │ User     │ │ Manager   │ │  Manager   │ │              │ │
+│  │ Module   │ │           │ │            │ │ - Console    │ │
+│  │          │ │ - Stocks  │ │ - Axio CSV │ │ - Suggestions│ │
+│  │          │ │ - MFs/SIP │ │   parser   │ │ - Chatbot    │ │
+│  │          │ │ - PF/NPS  │ │ - Manual   │ │ - Memory mgr │ │
+│  │          │ │ - Property│ │ - Categorize│ │              │ │
+│  │          │ │ - Gold    │ │            │ │ Claude API   │ │
+│  └──────────┘ └───────────┘ └────────────┘ └──────────────┘ │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │            Background Jobs (Celery + Redis)              │ │
+│  │  Price refresh │ NAV update │ AI daily analysis          │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└──────────────────────┬───────────────────────────────────────┘
                        │
-              ┌────────▼────────┐
-              │   SQLite / PG   │
-              │   Database      │
-              └─────────────────┘
+         ┌─────────────▼──────────────┐
+         │   PostgreSQL + pgvector    │
+         │   (Neon / Render)          │
+         │                            │
+         │  - Users, holdings, income │
+         │  - Expenses, categories    │
+         │  - Price cache             │
+         │  - Chat memory (vectors)   │
+         │  - User profile memory     │
+         └────────────────────────────┘
 ```
 
 ---
 
-## 6. Database Schema (High Level)
+## 8. Database Schema (Updated)
 
-### Core Tables
+```sql
+-- Core
+users (id, name, email, password_hash, created_at)
 
-```
-users
-  - id, name, email, password_hash
+-- Expense tracking
+expense_categories (id, name, parent_id, icon, is_axio_mapped)
+expenses (id, user_id, date, amount, category_id, description,
+          import_source [manual/axio_csv], axio_ref_id, created_at)
 
-accounts (bank accounts, wallets)
-  - id, user_id, name, type (savings/current/wallet), bank_name
+-- Income tracking
+income (id, user_id, date, amount, source [salary/rental/dividend/interest/other],
+        earner [self/spouse], notes)
 
-income
-  - id, user_id, date, amount, source, category, notes
+-- Stock holdings
+holdings_stocks (id, user_id, symbol, exchange [NSE/BSE],
+                 investment_type [long_term/swing/positional/ipo],
+                 quantity, avg_buy_price, buy_date, broker, notes)
 
-expenses
-  - id, user_id, account_id, date, amount, category, subcategory,
-    description, import_source (manual/csv/sms)
+-- Mutual fund holdings
+holdings_mf (id, user_id, scheme_code, scheme_name, category,
+             units, avg_nav, investment_mode [sip/lumpsum],
+             buy_date, folio_number, platform)
 
-holdings_stocks
-  - id, user_id, symbol, exchange (NSE/BSE), quantity, avg_buy_price,
-    buy_date, broker
+-- SIP tracking
+sips (id, user_id, scheme_code, scheme_name, amount, day_of_month,
+      frequency [monthly/quarterly], start_date, end_date,
+      step_up_percent, is_active)
 
-holdings_mutual_funds
-  - id, user_id, scheme_code (AMFI code), units, avg_nav,
-    buy_date, folio_number, platform
+sip_installments (id, sip_id, date, amount, nav, units_bought, status)
 
-holdings_fixed
-  - id, user_id, type (EPF/VPF/PPF/NPS/FD/SSY/bonds),
-    invested_amount, current_value, interest_rate,
-    start_date, maturity_date, notes
+-- Fixed income
+holdings_fixed (id, user_id, type [EPF/VPF/PPF/NPS/FD/SSY/bonds],
+                invested_amount, current_value, interest_rate,
+                start_date, maturity_date, notes)
 
-holdings_property
-  - id, user_id, name, purchase_price, purchase_date,
-    estimated_current_value, last_valuation_date, notes
+-- Property
+holdings_property (id, user_id, name, type [residential/commercial/land],
+                   purchase_price, purchase_date, estimated_current_value,
+                   last_valuation_date, loan_outstanding, notes)
 
-holdings_gold
-  - id, user_id, type (physical/digital/SGB), quantity_grams,
-    purchase_price, purchase_date
+-- Gold
+holdings_gold (id, user_id, type [physical/digital/SGB],
+               quantity_grams, purchase_price, purchase_date)
 
-price_cache
-  - symbol, price, last_updated, source
+-- Liabilities
+liabilities (id, user_id, type [home_loan/car_loan/personal_loan/education_loan],
+             principal, outstanding, interest_rate, emi_amount,
+             start_date, end_date, bank)
+
+-- Price cache
+price_cache (symbol, asset_type, price, day_change_pct, last_updated, source)
+
+-- AI memory
+user_memory (id, user_id, key, value, category [goal/preference/fact/plan],
+             confidence, created_at, updated_at)
+
+chat_conversations (id, user_id, title, created_at, updated_at)
+
+chat_messages (id, conversation_id, role [user/assistant], content,
+               created_at)
+
+chat_memory_vectors (id, user_id, content, embedding vector(1536),
+                     metadata jsonb, created_at)
 ```
 
 ---
 
-## 7. Key Features by Screen
+## 9. Key Screens
 
-### Dashboard (Home)
-- Total net worth (all assets combined)
-- Net worth trend chart (monthly)
-- Monthly income vs expenses summary
-- Asset allocation pie chart (equity / debt / real estate / gold / cash)
+### 1. Dashboard + AI Console
+```
+┌─────────────────────────────────────────────────────┐
+│  Net Worth: ₹2.4 Cr          Savings Rate: 45%     │
+│                                                     │
+│  ┌─────────────┐  ┌──────────────────────────────┐  │
+│  │ Asset       │  │  AI Portfolio Summary         │  │
+│  │ Allocation  │  │                               │  │
+│  │ [pie chart] │  │  Score: 72/100                │  │
+│  │             │  │                               │  │
+│  │ Equity: 55% │  │  ✓ Good MF diversification   │  │
+│  │ Debt: 20%   │  │  ✓ Consistent SIP history    │  │
+│  │ Real Est:15%│  │  ✗ Stock concentration risk   │  │
+│  │ Gold: 10%   │  │  ✗ Low emergency fund         │  │
+│  └─────────────┘  │                               │  │
+│                   │  → Suggestion: Add midcap      │  │
+│  ┌─────────────┐  │    exposure via SIP            │  │
+│  │ Income vs   │  └──────────────────────────────┘  │
+│  │ Expense     │                                    │
+│  │ [bar chart] │  ┌──────────────────────────────┐  │
+│  │             │  │  Next Actions                 │  │
+│  │ Inc: ₹3.5L  │  │  • Step up SIPs (April)      │  │
+│  │ Exp: ₹1.9L  │  │  • FD maturing in 12 days    │  │
+│  │ Saved: ₹1.6L│  │  • Tax-loss harvest opportunity│ │
+│  └─────────────┘  └──────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+```
 
-### Portfolio — Stocks
-- Holdings table with live prices, P&L, day change
-- Sector-wise breakdown
-- Add/edit/delete holdings
-- Auto-refresh prices every 15 mins (market hours)
+### 2. Portfolio — Stocks (with investment type)
+- Grouped by investment type (long-term / swing / positional)
+- Live prices, P&L, day change %
+- Sector breakdown
+- Add stock form includes investment type selector
 
-### Portfolio — Mutual Funds
-- Holdings with latest NAV, current value, returns (XIRR)
-- SIP tracker
-- Fund-wise and category-wise (large cap, mid cap, debt, etc.) breakdown
+### 3. Portfolio — Mutual Funds + SIP Manager
+- Holdings table (scheme, units, NAV, current value, returns %)
+- Active SIPs panel (monthly outflow, next SIP dates)
+- SIP performance tracker (month-wise units, NAV, value)
+- Add SIP form (scheme search, amount, date, step-up)
 
-### Portfolio — Fixed Income
-- EPF, VPF, PPF, NPS, FDs — all in one view
-- Maturity calendar
-- Interest accrual tracking
-
-### Portfolio — Property & Gold
-- Properties with estimated appreciation
-- Gold holdings with live gold price
-
-### Income Tracker
-- Monthly/yearly income view
-- Income by source (salary, rental, dividends, etc.)
-- You vs wife split view
-
-### Expense Tracker
-- Category-wise expense breakdown
-- Monthly trend
-- CSV import from bank statements
-- Manual entry form
+### 4. Expense Tracker (Axio Import)
+- Upload Axio CSV button
+- Preview → review categories → confirm import
+- Monthly expense breakdown (category-wise pie chart)
+- Trend over months
 - Budget vs actual
 
-### Net Worth
-- Consolidated view across ALL asset classes
-- Historical net worth growth chart
-- Liabilities tracking (loans, EMIs)
-- Assets minus liabilities = true net worth
+### 5. AI Chatbot
+- Full-screen conversational interface
+- Suggested prompts: "Am I on track for retirement?", "Where should I invest ₹50K?", "Analyze my expenses"
+- Remembers past conversations, goals, preferences
+- Can reference specific holdings: "Should I sell my Reliance shares?"
 
 ---
 
-## 8. Build Phases
+## 10. Build Phases (Revised)
 
-### Phase 1 — Foundation (MVP)
-- [ ] Project setup (Python backend + React frontend + Docker)
-- [ ] Database schema & migrations
-- [ ] User auth (simple, single user is fine for now)
-- [ ] Manual entry for all holding types (stocks, MF, FD, property, gold, PF, NPS)
-- [ ] yfinance integration for live stock prices
-- [ ] MFapi.in integration for MF NAV
-- [ ] Basic dashboard with net worth calculation
-- [ ] Portfolio views for each asset class
+### Phase 1 — Foundation + Cloud Setup (~2-3 weeks)
+- [ ] Project scaffolding (FastAPI + React + Docker Compose for local dev)
+- [ ] PostgreSQL schema + Alembic migrations
+- [ ] User auth (JWT-based, single user to start)
+- [ ] Deploy skeleton: React on Vercel, FastAPI on Render, Neon PG
+- [ ] CI/CD pipeline (GitHub Actions → auto-deploy on push)
 
-### Phase 2 — Expense & Income Tracking
-- [ ] Income entry and tracking
-- [ ] Expense entry (manual)
-- [ ] CSV bank statement import & parser (support SBI, HDFC, ICICI, Kotak formats)
-- [ ] Expense categorization (auto + manual)
-- [ ] Monthly income vs expense views
-- [ ] Budget setting and tracking
+### Phase 2 — Portfolio Core (~2-3 weeks)
+- [ ] Stock holdings CRUD with investment type classification
+- [ ] Mutual fund holdings CRUD
+- [ ] SIP manager (add/edit/pause SIPs, installment logging)
+- [ ] Fixed income entries (PF, NPS, FD, PPF)
+- [ ] Property & gold entries
+- [ ] Liabilities (loans) entry
+- [ ] yfinance integration — live stock + gold prices
+- [ ] MFapi.in integration — live MF NAV
+- [ ] Arthgyaan integration — NPS NAV
+- [ ] Price auto-refresh (Celery scheduled job, every 15 min during market hours)
 
-### Phase 3 — Advanced Integrations
-- [ ] NPS NAV via Arthgyaan API
-- [ ] Gold price tracking (via yfinance or commodity API)
-- [ ] SMS forwarding + parsing for auto expense capture (Axio replacement)
-- [ ] Email statement parser
-- [ ] Scheduled price refresh (Celery jobs)
+### Phase 3 — Income & Expense Tracking (~1-2 weeks)
+- [ ] Income entry (salary, rental, dividends — by earner)
+- [ ] Axio CSV parser & import flow
+- [ ] Expense category management
+- [ ] Monthly income vs expense dashboard
+- [ ] Expense trends and category breakdown charts
 
-### Phase 4 — Analytics & Polish
-- [ ] XIRR calculation for MF and stock returns
-- [ ] Asset allocation analysis & rebalancing suggestions
-- [ ] Net worth historical trend
-- [ ] Tax-related views (LTCG, STCG, dividend income)
+### Phase 4 — AI Console + Suggestions (~2-3 weeks)
+- [ ] Claude API integration (backend service)
+- [ ] Portfolio health score algorithm
+- [ ] AI console panel — good/bad analysis, alerts
+- [ ] Suggestion engine — next steps, rebalancing, tax optimization
+- [ ] Daily AI analysis background job
+
+### Phase 5 — AI Chatbot with Memory (~2-3 weeks)
+- [ ] pgvector setup for semantic memory
+- [ ] User profile memory system (structured key-value facts)
+- [ ] Conversation storage + history
+- [ ] Chat API with WebSocket for streaming responses
+- [ ] Chatbot UI (full conversation interface)
+- [ ] Memory extraction pipeline (auto-extract facts from conversations)
+- [ ] Context injection (portfolio data + memory into every AI call)
+
+### Phase 6 — Net Worth & Analytics (~1-2 weeks)
+- [ ] Consolidated net worth view (all asset classes)
+- [ ] Net worth historical trend (monthly snapshots)
+- [ ] XIRR calculation for stocks and MF
+- [ ] Asset allocation analysis with ideal vs actual
+- [ ] Savings rate tracking
+
+### Phase 7 — Polish & Multi-user (~1-2 weeks)
+- [ ] Wife's login (multi-user, shared household view)
 - [ ] Mobile-responsive design
-- [ ] Data backup & export (CSV/JSON)
-
-### Phase 5 — Optional / Future
-- [ ] Multi-user (wife gets her own login)
-- [ ] Mobile app (React Native or PWA)
-- [ ] CAS (Consolidated Account Statement) parser for auto MF import
-- [ ] EPFO passbook scraper
-- [ ] Notifications (SIP reminders, FD maturity alerts)
-- [ ] Goal-based planning (retirement, house, education)
+- [ ] Data export (CSV/JSON backup)
+- [ ] PWA support (install on phone home screen)
+- [ ] Notification system (SIP reminders, FD maturity, AI alerts)
 
 ---
 
-## 9. Open Questions to Decide Before Building
-
-1. **Local-only or cloud-hosted?**
-   - Local (more private, your data stays with you) vs hosted (accessible from phone anywhere)
-
-2. **Single user or multi-user from day 1?**
-   - Can start single-user and add wife's login later
-
-3. **Which bank statement formats to prioritize?**
-   - Which banks do you and your wife use? (SBI, HDFC, ICICI, Kotak, etc.)
-
-4. **Expense categories** — want to match Axio's categories or define your own?
-
-5. **How do you currently track investments?**
-   - Any existing spreadsheet/data we can import to bootstrap?
-
-6. **Do you want this as a web app, desktop app, or both?**
-
----
-
-## 10. Data Source Summary
+## 11. Data Source Summary
 
 | Data | Source | Cost | Auth Required |
 |------|--------|------|---------------|
 | Stock prices (NSE/BSE) | [yfinance](https://github.com/ranaroussi/yfinance) | Free | No |
 | Mutual Fund NAV | [MFapi.in](https://www.mfapi.in/) | Free | No |
 | NPS NAV | [Arthgyaan API](https://arthgyaan.com/blog/nps-nav-api.html) | Free | No |
-| Gold price | yfinance (`GC=F` or `GOLDBEES.NS`) | Free | No |
-| Expense data | CSV bank statement import | Free | No |
-| Income data | Manual entry | Free | No |
-| Property value | Manual entry | Free | No |
-| EPF/PPF balance | Manual entry (no API available) | Free | No |
+| Gold price | yfinance (`GOLDBEES.NS`) | Free | No |
+| Expense data | Axio CSV export | Free | No |
+| AI Engine | [Claude API](https://docs.anthropic.com/en/docs/) | ~$5-20/mo depending on usage | Yes (API key) |
+| Vector embeddings | Claude / Voyage AI | Included / ~$1/mo | Yes |
+
+---
+
+## 12. Cost Estimate (Monthly)
+
+| Service | Provider | Cost |
+|---------|----------|------|
+| Frontend hosting | Vercel (free tier) | $0 |
+| Backend hosting | Render (Starter) | $7 |
+| PostgreSQL + pgvector | Neon (free tier) | $0 |
+| Redis (job queue) | Upstash (free tier) | $0 |
+| Claude API (AI) | Anthropic | $5-20 |
+| Domain (optional) | Any registrar | ~$1 |
+| **Total** | | **~$13-28/month** |
+
+---
+
+## 13. Security Considerations
+
+- All financial data encrypted at rest (PG encryption)
+- HTTPS everywhere (Vercel + Render provide this)
+- JWT auth with refresh tokens
+- No bank credentials stored — only CSV uploads
+- Claude API calls contain financial data — use Anthropic's enterprise data policy
+- Rate limiting on all API endpoints
+- User memory can be viewed and deleted by user (transparency)
+
+---
+
+## 14. Open Questions (Remaining)
+
+1. **Which banks** do you and your wife use? (for Axio CSV format testing)
+2. **Do you have an existing spreadsheet** with current holdings we can import as seed data?
+3. **Claude API budget** — are you comfortable with ~₹1000-2000/month for AI features?
+4. **Custom domain** — do you want something like `finance.yourdomain.com`?
+5. **Who should have access?** Just you, or wife too from day 1?
