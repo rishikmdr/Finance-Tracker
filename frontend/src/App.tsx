@@ -12,6 +12,9 @@ import { ExpensesPage } from './pages/ExpensesPage';
 import { ChatPage } from './pages/ChatPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { GoalsPage } from './pages/GoalsPage';
+import { TaxPage } from './pages/TaxPage';
+import { MoreAssetsPage } from './pages/MoreAssetsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +37,9 @@ function App() {
               <Route path="/fixed-income" element={<FixedIncomePage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/goals" element={<GoalsPage />} />
+              <Route path="/tax" element={<TaxPage />} />
+              <Route path="/more-assets" element={<MoreAssetsPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>

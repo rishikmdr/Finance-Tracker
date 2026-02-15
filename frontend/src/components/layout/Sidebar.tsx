@@ -10,21 +10,38 @@ import {
   Users,
   LineChart,
   Settings,
+  Target,
+  Receipt,
+  Layers,
+  Bell,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
+import api from '../../lib/api';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/stocks', icon: TrendingUp, label: 'Stocks' },
   { to: '/mutual-funds', icon: BarChart3, label: 'Mutual Funds' },
   { to: '/fixed-income', icon: Wallet, label: 'Fixed Income' },
+  { to: '/more-assets', icon: Layers, label: 'More Assets' },
   { to: '/expenses', icon: ArrowDownUp, label: 'Expenses' },
+  { to: '/goals', icon: Target, label: 'Goals' },
+  { to: '/tax', icon: Receipt, label: 'Tax Planning' },
   { to: '/analytics', icon: LineChart, label: 'Analytics' },
   { to: '/chat', icon: MessageCircle, label: 'AI Advisor' },
 ];
 
 export function Sidebar() {
   const { user, logout } = useAuth();
+
+  const { data: notifications } = useQuery({
+    queryKey: ['notifications-count'],
+    queryFn: () => api.get('/notifications?unread_only=true').then(r => r.data),
+    refetchInterval: 60000,
+  });
+
+  const unreadCount = notifications?.length || 0;
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white">
@@ -33,7 +50,7 @@ export function Sidebar() {
         <p className="mt-1 text-sm text-gray-500">{user?.name}</p>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -69,6 +86,12 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-gray-200 p-4 space-y-1">
+        {unreadCount > 0 && (
+          <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            <Bell className="h-4 w-4" />
+            {unreadCount} new alert{unreadCount > 1 ? 's' : ''}
+          </div>
+        )}
         <NavLink
           to="/settings"
           className={({ isActive }) =>
