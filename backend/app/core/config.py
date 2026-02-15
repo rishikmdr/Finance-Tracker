@@ -1,12 +1,19 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# Resolve project root for SQLite default path
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+_DEFAULT_DB = f"sqlite:///{_PROJECT_ROOT / 'finance_tracker.db'}"
 
 
 class Settings(BaseSettings):
     APP_NAME: str = "Finance Tracker"
     DEBUG: bool = False
 
-    # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/finance_tracker"
+    # Database — defaults to SQLite so it works on any laptop with zero setup.
+    # Set DATABASE_URL env var to use PostgreSQL in production.
+    DATABASE_URL: str = _DEFAULT_DB
 
     # Auth
     SECRET_KEY: str = "change-me-in-production-use-a-real-secret-key"
@@ -14,11 +21,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    # Anthropic
+    # Anthropic — optional, can also be set per-user via Settings page
     ANTHROPIC_API_KEY: str = ""
-
-    # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]

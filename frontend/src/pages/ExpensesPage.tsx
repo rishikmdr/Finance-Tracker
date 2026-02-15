@@ -79,7 +79,7 @@ export function ExpensesPage() {
           </select>
           <select value={year} onChange={(e) => setYear(Number(e.target.value))}
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
-            {[2024, 2025, 2026].map((y) => <option key={y} value={y}>{y}</option>)}
+            {Array.from({ length: 8 }, (_, i) => 2020 + i).map((y) => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
       </div>

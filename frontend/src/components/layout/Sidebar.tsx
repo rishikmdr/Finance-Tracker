@@ -86,12 +86,26 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-gray-200 p-4 space-y-1">
-        {unreadCount > 0 && (
-          <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            <Bell className="h-4 w-4" />
-            {unreadCount} new alert{unreadCount > 1 ? 's' : ''}
-          </div>
-        )}
+        <NavLink
+          to="/notifications"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-blue-50 text-blue-700'
+                : unreadCount > 0
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`
+          }
+        >
+          <Bell className="h-5 w-5" />
+          Notifications
+          {unreadCount > 0 && (
+            <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
+              {unreadCount}
+            </span>
+          )}
+        </NavLink>
         <NavLink
           to="/settings"
           className={({ isActive }) =>

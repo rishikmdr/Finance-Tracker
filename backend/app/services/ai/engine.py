@@ -21,8 +21,12 @@ def _get_anthropic_client(api_key: str | None = None):
     key = api_key or settings.ANTHROPIC_API_KEY
     if not key:
         return None
-    import anthropic
-    return anthropic.Anthropic(api_key=key)
+    try:
+        import anthropic
+        return anthropic.Anthropic(api_key=key)
+    except ImportError:
+        logger.warning("anthropic package not installed. pip install anthropic")
+        return None
 
 
 def _build_portfolio_context(db: Session, user_id: int) -> str:
