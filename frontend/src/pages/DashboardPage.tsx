@@ -1,6 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown, Wallet, Coins } from 'lucide-react';
+import {
+  TrendingUp, TrendingDown, Wallet, Coins, Brain, RefreshCw,
+  AlertTriangle, CheckCircle, Lightbulb, Shield, ArrowRight,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import type { DashboardSummary } from '../types/api';
 
@@ -13,10 +17,35 @@ function formatINR(value: number): string {
   return value.toFixed(0);
 }
 
+interface AIAnalysis {
+  health_score: number | null;
+  good: string[];
+  bad: string[];
+  alerts: string[];
+  suggestions: string[];
+  error: string | null;
+}
+
 export function DashboardPage() {
+  const queryClient = useQueryClient();
+
   const { data, isLoading, error } = useQuery<DashboardSummary>({
     queryKey: ['dashboard'],
     queryFn: () => api.get('/dashboard/summary').then((r) => r.data),
+  });
+
+  const { data: analysis, isLoading: aiLoading, refetch: refetchAI } = useQuery<AIAnalysis>({
+    queryKey: ['portfolio-analysis'],
+    queryFn: () => api.get('/portfolio/analysis').then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const refreshPrices = useMutation({
+    mutationFn: () => api.post('/prices/refresh'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth'] });
+    },
   });
 
   if (isLoading) {
@@ -69,9 +98,31 @@ export function DashboardPage() {
     },
   ];
 
+  const healthColor = (score: number) => {
+    if (score >= 75) return 'text-green-600';
+    if (score >= 50) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const healthBg = (score: number) => {
+    if (score >= 75) return 'bg-green-500';
+    if (score >= 50) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <button
+          onClick={() => refreshPrices.mutate()}
+          disabled={refreshPrices.isPending}
+          className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshPrices.isPending ? 'animate-spin' : ''}`} />
+          Refresh Prices
+        </button>
+      </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -116,7 +167,7 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Asset Breakdown */}
+        {/* Asset Breakdown + Monthly Summary */}
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <h2 className="text-lg font-semibold text-gray-900">Asset Breakdown</h2>
           <div className="mt-4 space-y-3">
@@ -150,14 +201,151 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* AI Console placeholder */}
-      <div className="rounded-xl border border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 p-6">
-        <h2 className="text-lg font-semibold text-gray-900">AI Portfolio Insights</h2>
-        <p className="mt-2 text-sm text-gray-500">
-          AI-powered portfolio analysis will appear here once you add your holdings and connect your
-          Anthropic API key. The AI will analyze your portfolio health, identify risks, and suggest
-          next steps.
-        </p>
+      {/* AI Portfolio Insights */}
+      <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-blue-100 p-2">
+              <Brain className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">AI Portfolio Insights</h2>
+              <p className="text-xs text-gray-500">Powered by Claude AI</p>
+            </div>
+          </div>
+          <button
+            onClick={() => refetchAI()}
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${aiLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        {aiLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="h-6 w-6 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
+              <p className="mt-2 text-sm text-gray-500">Analyzing your portfolio...</p>
+            </div>
+          </div>
+        ) : analysis?.error ? (
+          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              {analysis.error}
+            </div>
+            {analysis.error.includes('API key') && (
+              <Link to="/settings" className="mt-2 inline-flex items-center gap-1 text-blue-600 hover:underline text-xs">
+                Go to Settings <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
+          </div>
+        ) : analysis ? (
+          <div className="space-y-4">
+            {/* Health Score */}
+            {analysis.health_score != null && (
+              <div className="flex items-center gap-4">
+                <div className="text-center">
+                  <div className={`text-3xl font-bold ${healthColor(analysis.health_score)}`}>
+                    {analysis.health_score}
+                  </div>
+                  <div className="text-xs text-gray-500">Health Score</div>
+                </div>
+                <div className="flex-1">
+                  <div className="h-3 rounded-full bg-gray-200">
+                    <div
+                      className={`h-3 rounded-full transition-all ${healthBg(analysis.health_score)}`}
+                      style={{ width: `${analysis.health_score}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {analysis.good.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-green-700 flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" /> What's Good
+                  </h3>
+                  {analysis.good.map((item, i) => (
+                    <p key={i} className="text-sm text-gray-600 pl-5">{item}</p>
+                  ))}
+                </div>
+              )}
+
+              {analysis.bad.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-red-700 flex items-center gap-1">
+                    <AlertTriangle className="h-4 w-4" /> Risks
+                  </h3>
+                  {analysis.bad.map((item, i) => (
+                    <p key={i} className="text-sm text-gray-600 pl-5">{item}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {analysis.alerts.length > 0 && (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+                <h3 className="text-sm font-medium text-amber-700 flex items-center gap-1 mb-1">
+                  <Shield className="h-4 w-4" /> Alerts
+                </h3>
+                {analysis.alerts.map((alert, i) => (
+                  <p key={i} className="text-sm text-amber-600 pl-5">{alert}</p>
+                ))}
+              </div>
+            )}
+
+            {analysis.suggestions.length > 0 && (
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                <h3 className="text-sm font-medium text-blue-700 flex items-center gap-1 mb-1">
+                  <Lightbulb className="h-4 w-4" /> Suggestions
+                </h3>
+                {analysis.suggestions.map((s, i) => (
+                  <p key={i} className="text-sm text-blue-600 pl-5">{s}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 py-4">
+            Add your holdings and AI API key to get personalized insights.
+          </p>
+        )}
+      </div>
+
+      {/* Quick Links */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Link
+          to="/analytics"
+          className="rounded-xl border border-gray-200 bg-white p-4 text-center hover:bg-gray-50 transition-colors"
+        >
+          <TrendingUp className="h-6 w-6 text-blue-500 mx-auto" />
+          <p className="mt-2 text-sm font-medium text-gray-700">Analytics</p>
+        </Link>
+        <Link
+          to="/chat"
+          className="rounded-xl border border-gray-200 bg-white p-4 text-center hover:bg-gray-50 transition-colors"
+        >
+          <Brain className="h-6 w-6 text-purple-500 mx-auto" />
+          <p className="mt-2 text-sm font-medium text-gray-700">AI Advisor</p>
+        </Link>
+        <Link
+          to="/expenses"
+          className="rounded-xl border border-gray-200 bg-white p-4 text-center hover:bg-gray-50 transition-colors"
+        >
+          <Coins className="h-6 w-6 text-amber-500 mx-auto" />
+          <p className="mt-2 text-sm font-medium text-gray-700">Expenses</p>
+        </Link>
+        <Link
+          to="/settings"
+          className="rounded-xl border border-gray-200 bg-white p-4 text-center hover:bg-gray-50 transition-colors"
+        >
+          <Shield className="h-6 w-6 text-green-500 mx-auto" />
+          <p className="mt-2 text-sm font-medium text-gray-700">Settings</p>
+        </Link>
       </div>
     </div>
   );

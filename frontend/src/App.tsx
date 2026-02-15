@@ -10,6 +10,8 @@ import { MutualFundsPage } from './pages/MutualFundsPage';
 import { FixedIncomePage } from './pages/FixedIncomePage';
 import { ExpensesPage } from './pages/ExpensesPage';
 import { ChatPage } from './pages/ChatPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,7 +33,9 @@ function App() {
               <Route path="/mutual-funds" element={<MutualFundsPage />} />
               <Route path="/fixed-income" element={<FixedIncomePage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/chat" element={<ChatPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Routes>
         </AuthProvider>
