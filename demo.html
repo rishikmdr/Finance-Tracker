@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Tracker - Product Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --primary-dark: #4f46e5;
+    --accent: #f59e0b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --bg-dark: #0f172a;
+    --bg-card: #1e293b;
+    --bg-card-hover: #334155;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+    --gradient-2: linear-gradient(135deg, #f59e0b, #ef4444);
+    --gradient-3: linear-gradient(135deg, #10b981, #06b6d4);
+    --gradient-4: linear-gradient(135deg, #ec4899, #8b5cf6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ── Slide Container ── */
+  .slides-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+
+  /* ── Navigation ── */
+  .nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 18px 30px;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(99, 102, 241, 0.2);
+    z-index: 100;
+  }
+
+  .nav-bar button {
+    background: var(--bg-card);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: var(--text);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-bar button:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+  }
+
+  .nav-bar button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .nav-bar .progress-dots {
+    display: flex;
+    gap: 6px;
+  }
+
+  .nav-bar .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bg-card-hover);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .nav-bar .dot.active {
+    background: var(--primary);
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  .nav-bar .dot.visited {
+    background: var(--primary-dark);
+  }
+
+  .slide-counter {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: center;
+  }
+
+  .auto-play-btn {
+    background: transparent !important;
+    border: 1px solid rgba(99,102,241,0.3) !important;
+    font-size: 18px !important;
+    padding: 8px 14px !important;
+  }
+
+  .auto-play-btn.playing {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+
+  /* ── Common Slide Styles ── */
+  .slide h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .slide h2 {
+    font-size: clamp(24px, 3.5vw, 40px);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  .slide h3 {
+    font-size: clamp(18px, 2vw, 24px);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .slide .subtitle {
+    font-size: clamp(16px, 2vw, 22px);
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 700px;
+    line-height: 1.5;
+    margin-bottom: 32px;
+  }
+
+  .gradient-text {
+    background: var(--gradient-1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-warm {
+    background: var(--gradient-2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-green {
+    background: var(--gradient-3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-pink {
+    background: var(--gradient-4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Card Grid ── */
+  .card-grid {
+    display: grid;
+    gap: 20px;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s;
+  }
+
+  .card:hover {
+    background: var(--bg-card-hover);
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+
+  .card .icon {
+    font-size: 36px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .card .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .card .card-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── Feature List ── */
+  .feature-list {
+    list-style: none;
+    max-width: 800px;
+    width: 100%;
+  }
+
+  .feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  .feature-list li .check {
+    color: var(--success);
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ── Mock UI ── */
+  .mock-browser {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 960px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+  }
+
+  .mock-browser .browser-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .mock-browser .browser-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .mock-browser .browser-dot.red { background: #ef4444; }
+  .mock-browser .browser-dot.yellow { background: #f59e0b; }
+  .mock-browser .browser-dot.green { background: #10b981; }
+
+  .mock-browser .browser-url {
+    flex: 1;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: 12px;
+  }
+
+  .mock-browser .browser-content {
+    padding: 28px;
+    min-height: 340px;
+  }
+
+  /* ── Dashboard Mock ── */
+  .mock-dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .mock-stat {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .mock-stat .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .mock-stat .value {
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .mock-stat .value.green { color: var(--success); }
+  .mock-stat .value.amber { color: var(--accent); }
+  .mock-stat .value.purple { color: var(--primary-light); }
+
+  .mock-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 120px;
+    padding: 12px 0;
+  }
+
+  .mock-bar {
+    flex: 1;
+    border-radius: 6px 6px 0 0;
+    transition: height 1s ease;
+    position: relative;
+  }
+
+  .mock-bar .bar-label {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ── Stagger Animation ── */
+  .stagger > * {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .slide.active .stagger > *:nth-child(1) { transition-delay: 0.1s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(2) { transition-delay: 0.2s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(3) { transition-delay: 0.3s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(4) { transition-delay: 0.4s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(5) { transition-delay: 0.5s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(6) { transition-delay: 0.6s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(7) { transition-delay: 0.7s; opacity: 1; transform: translateY(0); }
+  .slide.active .stagger > *:nth-child(8) { transition-delay: 0.8s; opacity: 1; transform: translateY(0); }
+
+  /* ── Floating Particles ── */
+  .particle-bg {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.08;
+    animation: float linear infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) rotate(0deg); }
+    100% { transform: translateY(-100px) rotate(360deg); }
+  }
+
+  /* ── Rupee Symbol Styles ── */
+  .rupee { font-family: system-ui; }
+
+  /* ── Two Column Layout ── */
+  .two-col {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .two-col .col { flex: 1; }
+
+  /* ── Tag Badges ── */
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 3px;
+  }
+
+  .tag.purple { background: rgba(99,102,241,0.2); color: var(--primary-light); }
+  .tag.green { background: rgba(16,185,129,0.2); color: var(--success); }
+  .tag.amber { background: rgba(245,158,11,0.2); color: var(--accent); }
+  .tag.pink { background: rgba(236,72,153,0.2); color: #f472b6; }
+  .tag.blue { background: rgba(6,182,212,0.2); color: #22d3ee; }
+
+  /* ── Terminal ── */
+  .terminal {
+    background: #0c0c0c;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 24px;
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 1.8;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+
+  .terminal .prompt { color: var(--success); }
+  .terminal .cmd { color: #f1f5f9; }
+  .terminal .comment { color: #64748b; }
+  .terminal .output { color: var(--primary-light); }
+
+  /* ── Pulse Animation ── */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .slide { padding: 30px 20px; }
+    .card-grid.cols-3, .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .mock-dashboard { grid-template-columns: repeat(2, 1fr); }
+    .two-col { flex-direction: column; gap: 24px; }
+  }
+
+  @media (max-width: 480px) {
+    .card-grid.cols-2, .card-grid.cols-3, .card-grid.cols-4 { grid-template-columns: 1fr; }
+    .mock-dashboard { grid-template-columns: 1fr; }
+  }
+
+  .keypress-hint {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    padding: 6px 14px;
+    border-radius: 8px;
+    z-index: 100;
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating particles -->
+<div class="particle-bg" id="particles"></div>
+
+<div class="keypress-hint">Arrow keys / Space to navigate</div>
+
+<div class="slides-container" id="slidesContainer">
+
+  <!-- ══════════════════════ SLIDE 1: Title ══════════════════════ -->
+  <div class="slide active" data-slide="0">
+    <div style="font-size: 72px; margin-bottom: 24px;">
+      <span class="rupee">&#8377;</span>
+    </div>
+    <h1><span class="gradient-text">Finance Tracker</span></h1>
+    <p class="subtitle">
+      A comprehensive personal & family finance platform built for <strong>Indian investors</strong>.
+      Track every asset. Plan every goal. Powered by AI.
+    </p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px;">
+      <span class="tag purple">Stocks & MFs</span>
+      <span class="tag green">Tax Planning</span>
+      <span class="tag amber">AI Insights</span>
+      <span class="tag pink">Family Finances</span>
+      <span class="tag blue">Goal Tracking</span>
+    </div>
+    <p style="margin-top: 40px; color: var(--text-muted); font-size: 14px;" class="pulse">
+      Press &rarr; or Space to begin the tour
+    </p>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 2: The Problem ══════════════════════ -->
+  <div class="slide" data-slide="1">
+    <h2>The Problem</h2>
+    <p class="subtitle">
+      Indian families juggle dozens of financial instruments across multiple platforms &mdash;
+      with no single place to see the full picture.
+    </p>
+    <div class="card-grid cols-3 stagger">
+      <div class="card">
+        <span class="icon">📊</span>
+        <div class="card-title">Scattered Data</div>
+        <div class="card-desc">Stocks on Zerodha, MFs on Coin, FDs in bank apps, insurance on portals, PPF passbook in a drawer.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🧮</span>
+        <div class="card-title">No True Returns</div>
+        <div class="card-desc">Simple P&L doesn't account for time-weighted returns. No XIRR. No inflation adjustment.</div>
+      </div>
+      <div class="card">
+        <span class="icon">👨‍👩‍👧‍👦</span>
+        <div class="card-title">Family Blind Spot</div>
+        <div class="card-desc">Spouse's investments, parents' FDs, kids' SSY &mdash; no combined family net worth view.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 3: The Solution ══════════════════════ -->
+  <div class="slide" data-slide="2">
+    <h2>The Solution: <span class="gradient-text">One Dashboard</span></h2>
+    <p class="subtitle">Everything in one place. Every rupee accounted for.</p>
+    <div class="mock-browser">
+      <div class="browser-bar">
+        <div class="browser-dot red"></div>
+        <div class="browser-dot yellow"></div>
+        <div class="browser-dot green"></div>
+        <div class="browser-url">localhost:5173 &mdash; Finance Tracker</div>
+      </div>
+      <div class="browser-content">
+        <div class="mock-dashboard stagger">
+          <div class="mock-stat">
+            <div class="label">Net Worth</div>
+            <div class="value green"><span class="rupee">&#8377;</span>2.85 Cr</div>
+          </div>
+          <div class="mock-stat">
+            <div class="label">Monthly Savings</div>
+            <div class="value amber"><span class="rupee">&#8377;</span>1.42 L</div>
+          </div>
+          <div class="mock-stat">
+            <div class="label">Active SIPs</div>
+            <div class="value purple">8 SIPs</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 20px;">
+          <div style="flex:1;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Asset Allocation</div>
+            <div class="mock-chart">
+              <div class="mock-bar" style="height: 85%; background: var(--gradient-1);"><span class="bar-label">Equity</span></div>
+              <div class="mock-bar" style="height: 50%; background: var(--gradient-3);"><span class="bar-label">Fixed</span></div>
+              <div class="mock-bar" style="height: 35%; background: var(--gradient-2);"><span class="bar-label">Property</span></div>
+              <div class="mock-bar" style="height: 20%; background: var(--gradient-4);"><span class="bar-label">Gold</span></div>
+              <div class="mock-bar" style="height: 10%; background: linear-gradient(135deg,#06b6d4,#3b82f6);"><span class="bar-label">Crypto</span></div>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Monthly Trend (Income vs Expenses)</div>
+            <div class="mock-chart">
+              <div class="mock-bar" style="height: 90%; background: rgba(16,185,129,0.5);"><span class="bar-label">Oct</span></div>
+              <div class="mock-bar" style="height: 60%; background: rgba(239,68,68,0.4);"></div>
+              <div class="mock-bar" style="height: 92%; background: rgba(16,185,129,0.5);"><span class="bar-label">Nov</span></div>
+              <div class="mock-bar" style="height: 55%; background: rgba(239,68,68,0.4);"></div>
+              <div class="mock-bar" style="height: 95%; background: rgba(16,185,129,0.5);"><span class="bar-label">Dec</span></div>
+              <div class="mock-bar" style="height: 70%; background: rgba(239,68,68,0.4);"></div>
+              <div class="mock-bar" style="height: 88%; background: rgba(16,185,129,0.5);"><span class="bar-label">Jan</span></div>
+              <div class="mock-bar" style="height: 52%; background: rgba(239,68,68,0.4);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 4: Multi-Asset Tracking ══════════════════════ -->
+  <div class="slide" data-slide="3">
+    <h2>Track <span class="gradient-text-warm">Every Asset Class</span></h2>
+    <p class="subtitle">From blue-chip stocks to your grandmother's gold &mdash; everything counts.</p>
+    <div class="card-grid cols-4 stagger">
+      <div class="card">
+        <span class="icon">📈</span>
+        <div class="card-title">Stocks</div>
+        <div class="card-desc">NSE & BSE. Long-term, swing, positional, intraday, IPO. Live prices via yfinance.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🏦</span>
+        <div class="card-title">Mutual Funds</div>
+        <div class="card-desc">Holdings with NAV tracking. SIP management with step-up. MFapi.in integration.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🔒</span>
+        <div class="card-title">Fixed Income</div>
+        <div class="card-desc">PPF, EPF, VPF, FDs, NPS, SSY, Bonds. Interest rates & maturity dates.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🏠</span>
+        <div class="card-title">Property</div>
+        <div class="card-desc">Real estate with rental yield tracking. Loan linkage & appreciation.</div>
+      </div>
+      <div class="card">
+        <span class="icon">✨</span>
+        <div class="card-title">Gold</div>
+        <div class="card-desc">Physical, digital & SGBs. Live gold price. Weight in grams.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🪙</span>
+        <div class="card-title">Crypto</div>
+        <div class="card-desc">BTC, ETH & altcoins. Exchange tracking. Quantity & avg buy price.</div>
+      </div>
+      <div class="card">
+        <span class="icon">📋</span>
+        <div class="card-title">ESOP / RSU</div>
+        <div class="card-desc">Track grants, vesting schedules, exercised shares. Potential value calculator.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🛡️</span>
+        <div class="card-title">Insurance</div>
+        <div class="card-desc">Term, health, ULIP, endowment. Premium alerts & maturity tracking.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 5: SIP & Goals ══════════════════════ -->
+  <div class="slide" data-slide="4">
+    <h2>Goal-Based <span class="gradient-text-green">Planning</span></h2>
+    <p class="subtitle">Set financial goals, and the system calculates the SIP you need to get there.</p>
+    <div class="two-col stagger">
+      <div class="col">
+        <div class="card" style="margin-bottom: 16px;">
+          <h3 style="color: var(--accent);">🎯 Child's Education</h3>
+          <div style="margin: 12px 0; font-size: 14px; color: var(--text-muted);">
+            Target: <span class="rupee">&#8377;</span>50,00,000 by 2035<br>
+            Current: <span class="rupee">&#8377;</span>8,50,000 (17%)
+          </div>
+          <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 10px; overflow: hidden;">
+            <div style="width: 17%; height: 100%; background: var(--gradient-2); border-radius: 8px;"></div>
+          </div>
+          <div style="margin-top: 12px; font-size: 15px; font-weight: 700; color: var(--success);">
+            SIP needed: <span class="rupee">&#8377;</span>87,014/mo
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--success);">🏡 Dream Home</h3>
+          <div style="margin: 12px 0; font-size: 14px; color: var(--text-muted);">
+            Target: <span class="rupee">&#8377;</span>2,00,00,000 by 2030<br>
+            Current: <span class="rupee">&#8377;</span>45,00,000 (22.5%)
+          </div>
+          <div style="background: rgba(255,255,255,0.1); border-radius: 8px; height: 10px; overflow: hidden;">
+            <div style="width: 22.5%; height: 100%; background: var(--gradient-3); border-radius: 8px;"></div>
+          </div>
+          <div style="margin-top: 12px; font-size: 15px; font-weight: 700; color: var(--success);">
+            SIP needed: <span class="rupee">&#8377;</span>1,92,500/mo
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <ul class="feature-list">
+          <li><span class="check">&#10003;</span> Inflation-adjusted targets (default 6%)</li>
+          <li><span class="check">&#10003;</span> Expected return modeling (12% equity, 7% debt)</li>
+          <li><span class="check">&#10003;</span> SIP step-up support (annual increase %)</li>
+          <li><span class="check">&#10003;</span> Priority levels: Critical, High, Medium, Low</li>
+          <li><span class="check">&#10003;</span> On-track indicator: progress vs timeline</li>
+          <li><span class="check">&#10003;</span> Goal categories: Retirement, Education, Home, Travel, Emergency</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 6: Tax Planning ══════════════════════ -->
+  <div class="slide" data-slide="5">
+    <h2>Smart <span class="gradient-text-warm">Tax Planning</span></h2>
+    <p class="subtitle">Track deductions, compare regimes, and maximize your savings.</p>
+    <div class="two-col stagger">
+      <div class="col">
+        <div class="card" style="margin-bottom: 16px;">
+          <h3>Old Regime vs New Regime</h3>
+          <div style="display: flex; gap: 16px; margin-top: 16px;">
+            <div style="flex:1; text-align: center; padding: 16px; background: rgba(239,68,68,0.1); border-radius: 12px; border: 1px solid rgba(239,68,68,0.2);">
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">OLD REGIME</div>
+              <div style="font-size: 24px; font-weight: 800; color: #ef4444;"><span class="rupee">&#8377;</span>6.00L</div>
+            </div>
+            <div style="flex:1; text-align: center; padding: 16px; background: rgba(16,185,129,0.1); border-radius: 12px; border: 2px solid var(--success);">
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">NEW REGIME &#10003;</div>
+              <div style="font-size: 24px; font-weight: 800; color: var(--success);"><span class="rupee">&#8377;</span>4.34L</div>
+            </div>
+          </div>
+          <div style="margin-top: 12px; text-align: center; color: var(--success); font-weight: 600;">
+            Save <span class="rupee">&#8377;</span>1.66L with New Regime
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <h3>Deduction Sections Tracked</h3>
+          <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+            <span class="tag purple">80C &bull; <span class="rupee">&#8377;</span>1.5L</span>
+            <span class="tag green">80D &bull; Health</span>
+            <span class="tag amber">80CCD(1B) &bull; NPS</span>
+            <span class="tag pink">HRA</span>
+            <span class="tag blue">24(b) &bull; Home Loan</span>
+            <span class="tag purple">80G &bull; Donations</span>
+            <span class="tag green">80E &bull; Education</span>
+            <span class="tag amber">80TTA / 80TTB</span>
+          </div>
+          <div style="margin-top: 16px; font-size: 14px; color: var(--text-muted); line-height: 1.6;">
+            Auto-calculated section limits &bull; Proof tracking &bull; FY auto-detection (Apr-Mar)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 7: AI Features ══════════════════════ -->
+  <div class="slide" data-slide="6">
+    <h2>AI-Powered <span class="gradient-text-pink">Insights</span></h2>
+    <p class="subtitle">Claude AI analyzes your portfolio and answers financial questions in context.</p>
+    <div class="two-col stagger">
+      <div class="col">
+        <div class="card" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: 0; right: 0; background: var(--gradient-4); padding: 4px 14px; border-radius: 0 0 0 12px; font-size: 11px; font-weight: 600;">AI CHAT</div>
+          <div style="margin-top: 12px;">
+            <div style="background: rgba(99,102,241,0.15); border-radius: 12px 12px 12px 2px; padding: 14px; margin-bottom: 12px; font-size: 14px;">
+              <strong>You:</strong> Am I on track for retirement at 55?
+            </div>
+            <div style="background: rgba(16,185,129,0.1); border-radius: 12px 12px 2px 12px; padding: 14px; font-size: 14px; line-height: 1.6;">
+              <strong>AI:</strong> Based on your current net worth of &#8377;2.85 Cr, monthly SIPs of &#8377;1.2L, and assuming 12% equity returns with 6% inflation &mdash; you'll accumulate approx &#8377;18.5 Cr by age 55. That's well above the &#8377;12 Cr target. You're on track! Consider increasing debt allocation after 50.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <ul class="feature-list">
+          <li><span class="check">&#10003;</span> <strong>Portfolio-aware</strong> &mdash; AI sees your actual holdings</li>
+          <li><span class="check">&#10003;</span> <strong>Multi-turn chat</strong> with conversation history</li>
+          <li><span class="check">&#10003;</span> <strong>Memory system</strong> &mdash; remembers past discussions</li>
+          <li><span class="check">&#10003;</span> <strong>Suggested prompts</strong> for quick analysis</li>
+          <li><span class="check">&#10003;</span> <strong>Your API key</strong> &mdash; set in Settings, stored locally</li>
+          <li><span class="check">&#10003;</span> <strong>Works without AI</strong> &mdash; all other features remain functional</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 8: Expense Tracking ══════════════════════ -->
+  <div class="slide" data-slide="7">
+    <h2>Expense & Income <span class="gradient-text">Tracking</span></h2>
+    <p class="subtitle">Manual entry or bulk CSV import. Every rupee categorized.</p>
+    <div class="card-grid cols-3 stagger">
+      <div class="card">
+        <span class="icon">📝</span>
+        <div class="card-title">Manual Entry</div>
+        <div class="card-desc">Quick expense logging with category, amount, date, and optional notes. Earner identification (self/spouse).</div>
+      </div>
+      <div class="card">
+        <span class="icon">📤</span>
+        <div class="card-title">Axio CSV Import</div>
+        <div class="card-desc">Bulk import from Axio app. Smart auto-categorization, duplicate detection, and preview before import.</div>
+      </div>
+      <div class="card">
+        <span class="icon">💰</span>
+        <div class="card-title">Income Sources</div>
+        <div class="card-desc">Salary, rental, dividends, interest. Track who earns what. Monthly trend analysis.</div>
+      </div>
+      <div class="card">
+        <span class="icon">📊</span>
+        <div class="card-title">Category Breakdown</div>
+        <div class="card-desc">Pie charts and bar graphs showing where your money goes each month.</div>
+      </div>
+      <div class="card">
+        <span class="icon">📈</span>
+        <div class="card-title">Monthly Trends</div>
+        <div class="card-desc">Income vs expense comparison over time. Savings rate tracking. Budget vs actual.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🆘</span>
+        <div class="card-title">Emergency Fund</div>
+        <div class="card-desc">Auto-calculates 6-month expense coverage. Status: adequate / warning / critical.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 9: Family Finances ══════════════════════ -->
+  <div class="slide" data-slide="8">
+    <h2>Family <span class="gradient-text-green">Combined View</span></h2>
+    <p class="subtitle">See your entire household's finances in one place.</p>
+    <div class="two-col stagger">
+      <div class="col">
+        <div class="mock-browser" style="max-width: 100%;">
+          <div class="browser-bar">
+            <div class="browser-dot red"></div>
+            <div class="browser-dot yellow"></div>
+            <div class="browser-dot green"></div>
+            <div class="browser-url">localhost:5173/family</div>
+          </div>
+          <div class="browser-content" style="min-height: auto; padding: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 16px;">
+              <div class="mock-stat" style="padding: 12px;">
+                <div class="label" style="font-size: 11px;">Family Net Worth</div>
+                <div class="value green" style="font-size: 20px;"><span class="rupee">&#8377;</span>4.2 Cr</div>
+              </div>
+              <div class="mock-stat" style="padding: 12px;">
+                <div class="label" style="font-size: 11px;">Total Monthly Savings</div>
+                <div class="value amber" style="font-size: 20px;"><span class="rupee">&#8377;</span>2.1 L</div>
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Members</div>
+            <div style="margin-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                <span>Rahul Sharma</span><span style="color: var(--success);"><span class="rupee">&#8377;</span>2.85 Cr</span>
+              </div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; overflow: hidden;">
+                <div style="width: 68%; height: 100%; background: var(--gradient-1); border-radius: 4px;"></div>
+              </div>
+            </div>
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                <span>Priya Sharma</span><span style="color: var(--success);"><span class="rupee">&#8377;</span>1.35 Cr</span>
+              </div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 4px; height: 8px; overflow: hidden;">
+                <div style="width: 32%; height: 100%; background: var(--gradient-4); border-radius: 4px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <ul class="feature-list">
+          <li><span class="check">&#10003;</span> Create family unit & invite members by email</li>
+          <li><span class="check">&#10003;</span> Combined net worth across all members</li>
+          <li><span class="check">&#10003;</span> Per-member asset share breakdown</li>
+          <li><span class="check">&#10003;</span> Owner / Member role-based access</li>
+          <li><span class="check">&#10003;</span> Individual privacy &mdash; members manage own data</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 10: Analytics ══════════════════════ -->
+  <div class="slide" data-slide="9">
+    <h2>Portfolio <span class="gradient-text-warm">Analytics</span></h2>
+    <p class="subtitle">XIRR, returns, trends, and allocation &mdash; the metrics that matter.</p>
+    <div class="card-grid cols-3 stagger">
+      <div class="card">
+        <span class="icon">📐</span>
+        <div class="card-title">XIRR Returns</div>
+        <div class="card-desc">Extended Internal Rate of Return using Newton-Raphson. Per-stock, per-fund, and overall portfolio XIRR.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🥧</span>
+        <div class="card-title">Asset Allocation</div>
+        <div class="card-desc">Equity / Debt / Real Estate / Gold / Crypto breakdown with interactive pie charts (Recharts).</div>
+      </div>
+      <div class="card">
+        <span class="icon">📉</span>
+        <div class="card-title">Net Worth Trend</div>
+        <div class="card-desc">Monthly net worth snapshots showing growth trajectory over time.</div>
+      </div>
+      <div class="card">
+        <span class="icon">💹</span>
+        <div class="card-title">Stock Returns</div>
+        <div class="card-desc">Per-holding P&L with absolute gain, percentage return, and XIRR for each stock.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🏷️</span>
+        <div class="card-title">Expense Breakdown</div>
+        <div class="card-desc">Category-wise expense analysis with month-over-month comparison bars.</div>
+      </div>
+      <div class="card">
+        <span class="icon">📦</span>
+        <div class="card-title">Export Portfolio</div>
+        <div class="card-desc">Download your entire portfolio as a structured JSON file for backup or external analysis.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 11: Smart Alerts ══════════════════════ -->
+  <div class="slide" data-slide="10">
+    <h2>Smart <span class="gradient-text-pink">Notifications</span></h2>
+    <p class="subtitle">Never miss a SIP, premium payment, or tax deadline again.</p>
+    <div class="two-col stagger">
+      <div class="col" style="max-width: 480px;">
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(239,68,68,0.1); border-radius: 10px; margin-bottom: 10px; border-left: 3px solid #ef4444;">
+            <span style="font-size: 20px;">🔴</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">SIP Due Tomorrow</div>
+              <div style="font-size: 12px; color: var(--text-muted);">HDFC Flexi Cap &bull; <span class="rupee">&#8377;</span>15,000</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(245,158,11,0.1); border-radius: 10px; margin-bottom: 10px; border-left: 3px solid #f59e0b;">
+            <span style="font-size: 20px;">🟡</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">Insurance Premium in 10 days</div>
+              <div style="font-size: 12px; color: var(--text-muted);">ICICI Pru Term Plan &bull; <span class="rupee">&#8377;</span>18,500</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(99,102,241,0.1); border-radius: 10px; margin-bottom: 10px; border-left: 3px solid #6366f1;">
+            <span style="font-size: 20px;">🔵</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">Tax Season Reminder</div>
+              <div style="font-size: 12px; color: var(--text-muted);">File ITR before July 31</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: rgba(16,185,129,0.1); border-radius: 10px; border-left: 3px solid #10b981;">
+            <span style="font-size: 20px;">🟢</span>
+            <div>
+              <div style="font-size: 14px; font-weight: 600;">FD Maturing in 25 days</div>
+              <div style="font-size: 12px; color: var(--text-muted);">SBI 1Y FD &bull; <span class="rupee">&#8377;</span>5,00,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <ul class="feature-list">
+          <li><span class="check">&#10003;</span> SIP due reminders (next 3 days)</li>
+          <li><span class="check">&#10003;</span> Insurance premium alerts (within 15 days)</li>
+          <li><span class="check">&#10003;</span> FD / bond maturity notices (within 30 days)</li>
+          <li><span class="check">&#10003;</span> Goal deadline warnings (&lt;80% progress, &lt;6 months left)</li>
+          <li><span class="check">&#10003;</span> ESOP vesting date alerts</li>
+          <li><span class="check">&#10003;</span> Tax season reminders (Jan-Mar)</li>
+          <li><span class="check">&#10003;</span> 7-day deduplication &mdash; no spam</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 12: Tech Stack ══════════════════════ -->
+  <div class="slide" data-slide="11">
+    <h2>Built With <span class="gradient-text">Modern Tech</span></h2>
+    <p class="subtitle">Fast, type-safe, and production-ready from day one.</p>
+    <div class="card-grid cols-2 stagger">
+      <div class="card">
+        <h3 style="margin-bottom: 14px;">Frontend</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span class="tag purple">React 19</span>
+          <span class="tag blue">TypeScript 5.9</span>
+          <span class="tag green">Vite 7</span>
+          <span class="tag amber">TailwindCSS 4</span>
+          <span class="tag pink">TanStack Query</span>
+          <span class="tag purple">Recharts</span>
+          <span class="tag blue">React Router 7</span>
+          <span class="tag green">Lucide Icons</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom: 14px;">Backend</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span class="tag green">Python 3.11+</span>
+          <span class="tag purple">FastAPI</span>
+          <span class="tag amber">SQLAlchemy 2</span>
+          <span class="tag blue">Pydantic v2</span>
+          <span class="tag pink">Uvicorn</span>
+          <span class="tag green">JWT Auth</span>
+          <span class="tag purple">yfinance</span>
+          <span class="tag amber">Claude API</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom: 14px;">Database</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span class="tag blue">SQLite (default)</span>
+          <span class="tag green">PostgreSQL (prod)</span>
+          <span class="tag amber">WAL mode</span>
+          <span class="tag purple">24 tables</span>
+          <span class="tag pink">Auto-migration</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom: 14px;">API Endpoints</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span class="tag green">50+ endpoints</span>
+          <span class="tag purple">REST API</span>
+          <span class="tag amber">Swagger Docs</span>
+          <span class="tag blue">CORS ready</span>
+          <span class="tag pink">Token refresh</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 13: Zero Setup ══════════════════════ -->
+  <div class="slide" data-slide="12">
+    <h2>One Command <span class="gradient-text-green">Setup</span></h2>
+    <p class="subtitle">No Docker. No PostgreSQL. No Redis. Just Python + Node.js.</p>
+    <div class="stagger" style="width: 100%; max-width: 700px;">
+      <div class="terminal">
+        <div><span class="prompt">$</span> <span class="cmd">git clone &lt;repo&gt; && cd Finance-Tracker</span></div>
+        <div><span class="prompt">$</span> <span class="cmd">chmod +x start.sh && ./start.sh</span></div>
+        <div><span class="comment"># That's it. Open http://localhost:5173</span></div>
+        <br>
+        <div><span class="output">&#10003; Python 3.11 detected</span></div>
+        <div><span class="output">&#10003; Node.js 18 detected</span></div>
+        <div><span class="output">&#10003; Virtual environment created</span></div>
+        <div><span class="output">&#10003; Backend dependencies installed</span></div>
+        <div><span class="output">&#10003; Frontend dependencies installed</span></div>
+        <div><span class="output">&#10003; SQLite database auto-created (24 tables)</span></div>
+        <div><span class="output">&#10003; Backend running on http://localhost:8000</span></div>
+        <div><span class="output">&#10003; Frontend running on http://localhost:5173</span></div>
+        <br>
+        <div><span class="comment"># API docs: http://localhost:8000/api/docs</span></div>
+        <div><span class="comment"># AI features: add your Anthropic key in Settings</span></div>
+      </div>
+      <div style="margin-top: 24px; text-align: center;">
+        <ul class="feature-list" style="display: inline-block; text-align: left;">
+          <li><span class="check">&#10003;</span> SQLite auto-created on first run &mdash; zero config</li>
+          <li><span class="check">&#10003;</span> All 24 tables auto-migrated on startup</li>
+          <li><span class="check">&#10003;</span> Graceful degradation: works without yfinance or anthropic</li>
+          <li><span class="check">&#10003;</span> Ctrl+C cleanly shuts down both servers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 14: Indian Focus ══════════════════════ -->
+  <div class="slide" data-slide="13">
+    <h2>Built for <span class="gradient-text-warm">India</span></h2>
+    <p class="subtitle">Every feature designed with Indian investors and tax laws in mind.</p>
+    <div class="card-grid cols-3 stagger">
+      <div class="card">
+        <span class="icon">🇮🇳</span>
+        <div class="card-title">Indian Exchanges</div>
+        <div class="card-desc">NSE & BSE native support. Symbol format: RELIANCE.NS, TCS.BO. Live prices in INR.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🏛️</span>
+        <div class="card-title">Indian Tax Law</div>
+        <div class="card-desc">80C, 80D, 80CCD, HRA, 24(b). Old vs New regime comparison. FY auto-detection.</div>
+      </div>
+      <div class="card">
+        <span class="icon">🏦</span>
+        <div class="card-title">Indian Products</div>
+        <div class="card-desc">PPF, EPF, VPF, NPS, SSY, Sukanya Samriddhi. SGB for gold. ELSS for tax saving.</div>
+      </div>
+      <div class="card">
+        <span class="icon"><span class="rupee">&#8377;</span></span>
+        <div class="card-title">INR Formatting</div>
+        <div class="card-desc">Indian number system: Cr, L, K. Comma formatting: 1,00,00,000. All amounts in Rupees.</div>
+      </div>
+      <div class="card">
+        <span class="icon">📱</span>
+        <div class="card-title">Axio Integration</div>
+        <div class="card-desc">Import expenses directly from Axio personal finance app CSV exports.</div>
+      </div>
+      <div class="card">
+        <span class="icon">👨‍👩‍👧‍👦</span>
+        <div class="card-title">Family Joint View</div>
+        <div class="card-desc">Indian joint families can track everyone's finances together. Owner + member model.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 15: All 15 Pages ══════════════════════ -->
+  <div class="slide" data-slide="14">
+    <h2>15 Pages, <span class="gradient-text">One App</span></h2>
+    <p class="subtitle">Complete coverage of your financial life.</p>
+    <div class="card-grid cols-3 stagger" style="max-width: 900px;">
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🏠</div>
+        <div style="font-size: 14px; font-weight: 600;">Dashboard</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">📈</div>
+        <div style="font-size: 14px; font-weight: 600;">Stocks</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🏦</div>
+        <div style="font-size: 14px; font-weight: 600;">Mutual Funds</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🔒</div>
+        <div style="font-size: 14px; font-weight: 600;">Fixed Income</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">💎</div>
+        <div style="font-size: 14px; font-weight: 600;">More Assets</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">💸</div>
+        <div style="font-size: 14px; font-weight: 600;">Expenses</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🎯</div>
+        <div style="font-size: 14px; font-weight: 600;">Goals</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🧾</div>
+        <div style="font-size: 14px; font-weight: 600;">Tax Planning</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">📊</div>
+        <div style="font-size: 14px; font-weight: 600;">Analytics</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">👨‍👩‍👧‍👦</div>
+        <div style="font-size: 14px; font-weight: 600;">Family</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🤖</div>
+        <div style="font-size: 14px; font-weight: 600;">AI Chat</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🔔</div>
+        <div style="font-size: 14px; font-weight: 600;">Notifications</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">⚙️</div>
+        <div style="font-size: 14px; font-weight: 600;">Settings</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">🔐</div>
+        <div style="font-size: 14px; font-weight: 600;">Login</div>
+      </div>
+      <div class="card" style="padding: 16px; text-align: center;">
+        <div style="font-size: 24px; margin-bottom: 6px;">📝</div>
+        <div style="font-size: 14px; font-weight: 600;">Register</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 16: Why This? ══════════════════════ -->
+  <div class="slide" data-slide="15">
+    <h2>Why <span class="gradient-text-green">Finance Tracker</span>?</h2>
+    <div class="card-grid cols-2 stagger" style="max-width: 900px; margin-top: 20px;">
+      <div class="card" style="border-left: 3px solid var(--primary);">
+        <div class="card-title" style="color: var(--primary-light);">vs. Excel / Google Sheets</div>
+        <div class="card-desc">No more maintaining 20 tabs. Auto-calculated returns, live prices, and smart alerts do the work for you.</div>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--success);">
+        <div class="card-title" style="color: var(--success);">vs. Groww / INDmoney</div>
+        <div class="card-desc">Your data stays on YOUR laptop. No tracking. No premium paywalls. Full API access. Open source.</div>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <div class="card-title" style="color: var(--accent);">vs. Generic Finance Apps</div>
+        <div class="card-desc">Built for India: 80C/80D tracking, PPF/EPF/NPS, NSE/BSE, INR formatting. Not an afterthought.</div>
+      </div>
+      <div class="card" style="border-left: 3px solid #f472b6;">
+        <div class="card-title" style="color: #f472b6;">vs. CA / Financial Advisor</div>
+        <div class="card-desc">AI-powered analysis available 24/7. Portfolio-aware advice. Plus: the advisor can still use the export!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ SLIDE 17: CTA ══════════════════════ -->
+  <div class="slide" data-slide="16">
+    <div style="font-size: 72px; margin-bottom: 24px;">
+      <span class="rupee">&#8377;</span>
+    </div>
+    <h1><span class="gradient-text">Finance Tracker</span></h1>
+    <p class="subtitle" style="margin-bottom: 24px;">
+      Your complete personal & family finance platform.<br>
+      Self-hosted. AI-powered. Built for India.
+    </p>
+    <div class="terminal" style="max-width: 500px; margin-bottom: 32px; text-align: left;">
+      <div><span class="prompt">$</span> <span class="cmd">./start.sh</span></div>
+      <div><span class="output">Open http://localhost:5173</span></div>
+    </div>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+      <span class="tag purple" style="font-size: 14px; padding: 8px 18px;">8 Asset Classes</span>
+      <span class="tag green" style="font-size: 14px; padding: 8px 18px;">50+ API Endpoints</span>
+      <span class="tag amber" style="font-size: 14px; padding: 8px 18px;">15 Pages</span>
+      <span class="tag pink" style="font-size: 14px; padding: 8px 18px;">24 DB Tables</span>
+      <span class="tag blue" style="font-size: 14px; padding: 8px 18px;">AI-Powered</span>
+    </div>
+    <p style="margin-top: 36px; color: var(--text-muted); font-size: 14px;">
+      Zero external dependencies &bull; Runs on any laptop &bull; SQLite included
+    </p>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav-bar">
+  <button id="prevBtn" onclick="navigate(-1)">&larr; Prev</button>
+  <div class="progress-dots" id="dots"></div>
+  <span class="slide-counter" id="counter">1 / 17</span>
+  <button id="nextBtn" onclick="navigate(1)">Next &rarr;</button>
+  <button class="auto-play-btn" id="autoPlayBtn" onclick="toggleAutoPlay()" title="Auto-play">&#9654;</button>
+</div>
+
+<script>
+  // ── Particles ──
+  (function createParticles() {
+    const container = document.getElementById('particles');
+    const colors = ['#6366f1', '#f59e0b', '#10b981', '#ec4899', '#06b6d4'];
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 20 + 5;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (Math.random() * 20 + 15) + 's';
+      p.style.animationDelay = -(Math.random() * 20) + 's';
+      container.appendChild(p);
+    }
+  })();
+
+  // ── Slides ──
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let current = 0;
+  let autoPlayInterval = null;
+
+  // Build dots
+  const dotsContainer = document.getElementById('dots');
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  }
+
+  function goTo(index) {
+    if (index < 0 || index >= totalSlides || index === current) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current === index ? current : current].classList.remove('exit'), 700);
+
+    const prev = current;
+    current = index;
+    slides[current].classList.add('active');
+
+    // Update dots
+    const dots = dotsContainer.children;
+    for (let i = 0; i < dots.length; i++) {
+      dots[i].className = 'dot';
+      if (i < current) dots[i].classList.add('visited');
+      if (i === current) dots[i].classList.add('active');
+    }
+
+    // Remove exit from previous
+    setTimeout(() => slides[prev].classList.remove('exit'), 700);
+
+    // Update counter and buttons
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + totalSlides;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === totalSlides - 1;
+  }
+
+  function navigate(dir) {
+    goTo(current + dir);
+  }
+
+  function toggleAutoPlay() {
+    const btn = document.getElementById('autoPlayBtn');
+    if (autoPlayInterval) {
+      clearInterval(autoPlayInterval);
+      autoPlayInterval = null;
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654;';
+    } else {
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646;&#9646;';
+      autoPlayInterval = setInterval(() => {
+        if (current < totalSlides - 1) {
+          navigate(1);
+        } else {
+          toggleAutoPlay(); // Stop at end
+        }
+      }, 5000);
+    }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); navigate(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); navigate(-1); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End') { e.preventDefault(); goTo(totalSlides - 1); }
+  });
+
+  // Initial button state
+  document.getElementById('prevBtn').disabled = true;
+</script>
+
+</body>
+</html>
