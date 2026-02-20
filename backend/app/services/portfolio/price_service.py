@@ -1,10 +1,8 @@
 """Live price fetching for stocks, mutual funds, gold, and NPS."""
 import logging
 from datetime import datetime, timezone, timedelta
-from decimal import Decimal
 
 import httpx
-import yfinance as yf
 from sqlalchemy.orm import Session
 
 from app.models.ai_memory import PriceCache
@@ -13,11 +11,22 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL_MINUTES = 15
 
+# yfinance is optional — gracefully degrade if not installed
+try:
+    import yfinance as yf
+    HAS_YFINANCE = True
+except ImportError:
+    HAS_YFINANCE = False
+    logger.info("yfinance not installed — live stock/gold prices unavailable. pip install yfinance")
+
 
 def _is_cache_fresh(cached: PriceCache | None) -> bool:
     if not cached:
         return False
-    age = datetime.now(timezone.utc) - cached.last_updated.replace(tzinfo=timezone.utc)
+    last_updated = cached.last_updated
+    if last_updated.tzinfo is None:
+        last_updated = last_updated.replace(tzinfo=timezone.utc)
+    age = datetime.now(timezone.utc) - last_updated
     return age < timedelta(minutes=CACHE_TTL_MINUTES)
 
 
@@ -28,6 +37,11 @@ def get_stock_price(symbol: str, exchange: str, db: Session) -> dict:
     cached = db.query(PriceCache).filter(PriceCache.symbol == ticker_symbol).first()
     if _is_cache_fresh(cached):
         return {"price": cached.price, "day_change_pct": cached.day_change_pct}
+
+    if not HAS_YFINANCE:
+        if cached:
+            return {"price": cached.price, "day_change_pct": cached.day_change_pct}
+        return {"price": None, "day_change_pct": None}
 
     try:
         ticker = yf.Ticker(ticker_symbol)
@@ -89,12 +103,16 @@ def get_gold_price(db: Session) -> dict:
     if _is_cache_fresh(cached):
         return {"price_per_gram": cached.price, "day_change_pct": cached.day_change_pct}
 
+    if not HAS_YFINANCE:
+        if cached:
+            return {"price_per_gram": cached.price, "day_change_pct": cached.day_change_pct}
+        return {"price_per_gram": None, "day_change_pct": None}
+
     try:
         ticker = yf.Ticker("GOLDBEES.NS")
         hist = ticker.history(period="2d")
         if not hist.empty:
             price = float(hist["Close"].iloc[-1])
-            # GOLDBEES price ≈ 1/100th of 10g gold price, so price * 10 ≈ per gram
             price_per_gram = round(price * 10, 2)
             prev = float(hist["Close"].iloc[0]) if len(hist) > 1 else None
             day_change = round((price - prev) / prev * 100, 2) if prev else None
@@ -109,7 +127,7 @@ def get_gold_price(db: Session) -> dict:
 
 
 def get_nps_nav(scheme_code: str, db: Session) -> dict:
-    """Fetch NPS NAV (placeholder — Arthgyaan API or fallback)."""
+    """Fetch NPS NAV (placeholder)."""
     cache_key = f"NPS:{scheme_code}"
     cached = db.query(PriceCache).filter(PriceCache.symbol == cache_key).first()
     if cached:
@@ -126,6 +144,11 @@ def get_index_value(index: str, db: Session) -> dict:
     cached = db.query(PriceCache).filter(PriceCache.symbol == cache_key).first()
     if _is_cache_fresh(cached):
         return {"value": cached.price, "day_change_pct": cached.day_change_pct}
+
+    if not HAS_YFINANCE:
+        if cached:
+            return {"value": cached.price, "day_change_pct": cached.day_change_pct}
+        return {"value": None, "day_change_pct": None}
 
     try:
         ticker = yf.Ticker(yf_symbol)
